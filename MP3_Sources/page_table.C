@@ -96,6 +96,7 @@ void PageTable::handle_fault(REGS * _r)
 			page_table = (unsigned long*) (current_page_directory[dir_index] & 0xFFFFF000);
 			for(int i = 0; i < 1024; i++){
 				page_table[i] = 0 | 2;
+				page_table[i] += 4096;
 			}
 		}
 		//get the next 10 bit for page table page
