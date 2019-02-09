@@ -119,9 +119,10 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_info_frames)
 {
 	//assert(_n_frames <= FRAME_SIZE * 4);
-	nFreeFrames = _n_frames;   
+	   
     base_frame_no = _base_frame_no; 
-    nframes = _n_frames;       
+    nframes = _n_frames;    
+	nFreeFrames = _n_frames;	
     info_frame_no = _info_frame_no; 
 	n_info_frames = _n_info_frames;
 	
@@ -134,7 +135,7 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 	// Number of frames must be "fill" the bitmap!
 	//assert ((nframes % 4 ) == 0);
     // Everything ok. Proceed to mark all bits in the bitmap
-    for(int i = 0; i * 4 < _n_frames; i++) {
+    for(int i = 0; i * 4 < nframes; i++) {
         bitmap[i] = 0xFF;
     }
     
@@ -142,7 +143,7 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
     
 	unsigned char mask = 0x80;
 	//bitmap begin from info_frame_no
-	/*
+	
 	for (int i = _info_frame_no; i < _info_frame_no + _n_info_frames; i++) {
 		int index_info = (i - _info_frame_no) / 4;
 		mask = mask >> (i - _info_frame_no) % 4;
@@ -150,7 +151,7 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 		
 	}
     nFreeFrames -= _n_info_frames;
-	*/
+	
 	
 	if(info_frame_no == 0){
 		bitmap[0] = 0x7F;
@@ -173,43 +174,37 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
     // find the first consective _n_frames available to get 
-	assert(_n_frames <= nFreeFrames);
+	assert(nFreeFrames >= _n_frames)
 	unsigned char mask_1;
 	unsigned int index_bitmap;
 	unsigned long header = base_frame_no;
 	int count = 0;
 	//find from whole scape
 	for(int i = base_frame_no; i < nframes + base_frame_no; i++) {
-		index_bitmap = (i - base_frame_no) / 4;
-		mask_1 = 0x80 >> (i - base_frame_no) % 4;
-		//find a free frame
-		if(mask_1 & bitmap[index_bitmap] != 0) {
-			// no consective before, take head from it
-			if(count == 0) {header = i;}		
+		mask_1 = 0x80 >> (i - base_frame_no)%4;
+		index_bitmap = (i - base_frame_no)/4;
+		
+		//find a free
+		if((bitmap[index_bitmap] & mask_1) != 0){
+			if (count == 0) {
+				header = i;
+			}
 			count++;
-			//if the consective free frame == _n_frames, take them
-			if(count == _n_frames) {
-				//from the header to this.
-				for(int j = header; j < header + _n_frames; j++) {
-					//mark the jth as not free
-					unsigned int index_bitmap_2 = (j - base_frame_no) / 4;
-					unsigned char mask_2 = 0x80 >> (j - base_frame_no) % 4;
-					bitmap[index_bitmap_2] ^= mask_2;
-					//for header, marked as header
-					if(j == header){
-						unsigned char mask_head = 0x08 >> (header - base_frame_no) % 4;
-						bitmap[index_bitmap_2] ^= mask_head;
-					}
-				}
+			if (count==_n_frames) {
+				
+				mark_inaccessible(header, _n_frames);
+				unsigned char temp_mask2 = 0x08 >> ((header - base_frame_no) % 4);
+				unsigned long temp_bitmap_index = (header - base_frame_no) / 4;
+				bitmap[temp_bitmap_index] ^= temp_mask2;
 				nFreeFrames -= _n_frames;
 				return header;
 			}
 		}
-		// not free, counting restart from 0
-		else {
-			count = 0;
+		if(bitmap[index_bitmap] & mask_1 == 0) {
+			count==0;
 		}
 	}
+	
 	return 0;
 }
 
@@ -226,7 +221,7 @@ void ContFramePool::mark_inaccessible(unsigned long _frame_no)
     // Let's first do a range check.
     assert ((_frame_no >= base_frame_no) && (_frame_no < base_frame_no + nframes));
     
-    unsigned int bitmap_index = (_frame_no - base_frame_no) / 4;
+    unsigned int bitmap_index = ((_frame_no - base_frame_no) / 4);
     unsigned char mask = 0x80 >> ((_frame_no - base_frame_no) % 4);
     
     // Is the frame being used already?
@@ -260,12 +255,12 @@ void ContFramePool::release_frames(unsigned long _first_frame_no)
 	unsigned int index_bitmap_re;
 	for(int i = _first_frame_no; i < current_pool.base_frame_no + current_pool.nframes; i++) {
 		unsigned int diff = i - current_pool.base_frame_no;
-		mask_re = 0x80 >> diff % 4;
-		index_bitmap_re = diff / 4;
+		mask_re = 0x80 >> (diff % 4);
+		index_bitmap_re = (diff / 4);
 		//when this frame is the header of the next group, break 
-		if(current_pool.bitmap[index_bitmap_re] & (0x08 >> diff % 4) == 0) break;
+		if(current_pool.bitmap[index_bitmap_re] & (0x08 >> (diff % 4)) == 0) break;
 		//when this frame is the free, break  0100 1100
-		if(current_pool.bitmap[index_bitmap_re] & (0x80 >> diff % 4) != 0) break;
+		if(current_pool.bitmap[index_bitmap_re] & (0x80 >> (diff % 4)) != 0) break;
 		
 		current_pool.bitmap[index_bitmap_re] |= mask_re;
 	}

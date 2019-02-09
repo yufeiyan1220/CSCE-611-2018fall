@@ -10,7 +10,7 @@ start.o: start.asm
 	nasm -f aout -o start.o start.asm
 
 utils.o: utils.C utils.H
-	$(CPP) $(CPP_OPTIONS) -g -c -o utils.o utils.C
+	$(CPP) $(CPP_OPTIONS) -c -o utils.o utils.C
 
 assert.o: assert.C assert.H
 	$(CPP) $(CPP_OPTIONS) -c -o assert.o assert.C
@@ -27,17 +27,17 @@ machine_low.o: machine_low.asm machine_low.H
 # ==== DEVICES =====
 
 console.o: console.C console.H
-	$(CPP) $(CPP_OPTIONS) -g -c -o console.o console.C
+	$(CPP) $(CPP_OPTIONS) -c -o console.o console.C
 
 # ==== MEMORY =====
 
 cont_frame_pool.o: cont_frame_pool.C cont_frame_pool.H
-	$(CPP) $(CPP_OPTIONS) -g -c -o cont_frame_pool.o cont_frame_pool.C
+	$(CPP) $(CPP_OPTIONS) -c -o cont_frame_pool.o cont_frame_pool.C
 
 # ==== KERNEL MAIN FILE =====
 
 kernel.o: kernel.C console.H 
-	$(CPP) $(CPP_OPTIONS) -g -c -o kernel.o kernel.C
+	$(CPP) $(CPP_OPTIONS) -c -o kernel.o kernel.C
 
 
 kernel.bin: start.o utils.o kernel.o assert.o console.o \
